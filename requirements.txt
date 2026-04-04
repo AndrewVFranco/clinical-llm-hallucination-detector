@@ -10,3 +10,7 @@ ruff>=0.4.0
 
 # Pytest
 pytest>=9.0.0
+
+# Pubmed requests
+requests>=2.33.0
+lxml>=6.0.2
