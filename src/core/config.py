@@ -5,6 +5,9 @@ class Settings(BaseSettings):
     # NCBI
     NCBI_API_KEY: str
 
+    # Hugging Face
+    HF_TOKEN: str
+
     # Ollama
     OLLAMA_SERVER_IP: str
     OLLAMA_SERVER_PORT: int = 11434
@@ -13,7 +16,7 @@ class Settings(BaseSettings):
     OLLAMA_TEMPERATURE: float = 0.1
 
     # ChromaDB
-    CHROMA_DB_LOCATION: str = "data/chroma_db"
+    CHROMA_DB_LOCATION: str = str(Path(__file__).resolve().parent.parent.parent / "data" / "chroma_db")
     CHROMA_COLLECTION_NAME: str = "pubmed_abstracts"
 
     # MLflow

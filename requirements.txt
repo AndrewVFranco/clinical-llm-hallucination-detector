@@ -14,3 +14,7 @@ pytest>=9.0.0
 # Pubmed requests
 requests>=2.33.0
 lxml>=6.0.2
+
+# ChromaDB
+chromadb>=0.4.0
+sentence-transformers>=2.2.0
