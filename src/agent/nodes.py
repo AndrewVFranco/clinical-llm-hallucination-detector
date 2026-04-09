@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 from src.agent.state import AgentState
 from src.retrieval.cache import get_cache, set_cache
 from src.retrieval.vector_store import add_abstracts, query_abstracts
@@ -8,7 +9,7 @@ from langchain_core.output_parsers import JsonOutputParser
 from sentence_transformers import CrossEncoder
 from src.core.config import settings
 
-_llm = ChatGoogleGenerativeAI(model="gemini-2.5-flash-lite", google_api_key=settings.GEMINI_API_KEY)
+_llm = ChatGoogleGenerativeAI(model="gemma-3-27b-it", google_api_key=settings.GEMINI_API_KEY)
 _nli_model = CrossEncoder("cross-encoder/nli-MiniLM2-L6-H768")
 
 def check_cache(state: AgentState):
@@ -23,9 +24,21 @@ def route_after_cache(state: AgentState) -> str:
         return "llm_generation"
     return "pubmed_retrieval"
 
+def preprocess_query(state: AgentState):
+    prompt = f"""Extract a concise PubMed search query (3-6 words) from this clinical question.
+    Return ONLY the search terms, nothing else.
+
+    Question: {state["query"]}
+
+    Search terms:"""
+
+    response = _llm.invoke(prompt)
+    search_query = response.content.strip()
+    return {"search_query": search_query}
+
 def pubmed_retrieval(state: AgentState):
     if not state["cache_hit"]:
-        results = search_pubmed(state["query"])
+        results = search_pubmed(state["search_query"])
         add_abstracts(results)
         abstracts = query_abstracts(state["query"])
         set_cache(state["query"], abstracts)
@@ -72,15 +85,27 @@ def nli_scoring(state: AgentState):
 
         for abstract in state["abstracts"]:
             scores = _nli_model.predict([(abstract["abstract"], claim)])[0]
+            scores = torch.softmax(torch.tensor(scores), dim=0).numpy()
             label_idx = int(np.argmax(scores))
-            if scores[label_idx] > best_score:
-                best_score = scores[label_idx]
-                best_result = {
-                    "claim": claim,
-                    "label": labels[label_idx],
-                    "score": float(best_score),
-                    "evidence": abstract["abstract"]
-                }
+
+            if label_idx != 2:
+                non_neutral_score = max(scores[0], scores[1])
+                if non_neutral_score > 0.7 and non_neutral_score > best_score:
+                    best_score = non_neutral_score
+                    best_result = {
+                        "claim": claim,
+                        "label": labels[label_idx],
+                        "score": float(non_neutral_score),
+                        "evidence": abstract["abstract"]
+                    }
+
+        if best_result is None:
+            best_result = {
+                "claim": claim,
+                "label": "Unverifiable",
+                "score": 0.0,
+                "evidence": None
+            }
 
         scored_claims.append(best_result)
 

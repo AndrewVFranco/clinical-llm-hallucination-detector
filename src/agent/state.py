@@ -3,6 +3,7 @@ from typing import TypedDict, Optional
 class AgentState(TypedDict):
     query: str
     cache_hit: bool
+    search_query: Optional[str]
     abstracts: list[dict]
     llm_response: Optional[str]
     claims: Optional[list[str]]
