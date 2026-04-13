@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 from src.agent.graph import agent
 from pydantic import BaseModel
+from fastapi.middleware.cors import CORSMiddleware
 
 class QueryRequest(BaseModel):
     query: str
@@ -9,7 +10,15 @@ class QueryRequest(BaseModel):
 @asynccontextmanager
 async def lifespan(app):
     yield
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, title="SentinelMD")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.post("/query")
 async def query(request: QueryRequest):
