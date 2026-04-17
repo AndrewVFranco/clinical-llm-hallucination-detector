@@ -16,7 +16,7 @@ Submit a clinical question. The system retrieves PubMed literature, generates a 
 
 ## Motivation
 
-LLMs are increasingly being deployed in clinical settings, but they hallucinate — and in healthcare, hallucinations are dangerous. A model confidently stating an incorrect drug dosage or contraindication can directly harm patients.
+LLMs are increasingly being deployed in clinical settings, but they hallucinate. In healthcare, hallucinations are dangerous. A model confidently stating an incorrect drug dosage or contraindication can directly harm patients.
 
 SentinelMD addresses this by functioning as a **safety layer** that sits on top of any LLM, verifying its claims against authoritative medical literature in real time. Drawing on 8+ years of clinical experience in cardiac telemetry, this system was designed with a real understanding of how bad clinical information propagates through care workflows and what the consequences look like.
 
@@ -73,8 +73,6 @@ assembly                  Returns annotated response with claims, evidence, and 
 ---
 
 ## Evaluation
-
-*RAG pipeline evaluation via RAGAS — coming in v1.1*
 
 | Metric | Score |
 |---|---|
@@ -193,13 +191,13 @@ Pinecone is a production-grade managed vector database used in real health tech 
 General-purpose sentence transformers produce weak embeddings for clinical text because they weren't trained on biomedical language. BioBERT was pretrained on PubMed abstracts and fine-tuned on MedNLI, making it significantly better at capturing semantic similarity in clinical contexts.
 
 **Why NLI over cosine similarity for claim verification?**
-Cosine similarity tells you whether two pieces of text are topically related. NLI tells you whether one piece of text entails, contradicts, or is neutral toward another — which is the correct operation for hallucination detection.
+Cosine similarity tells you whether two pieces of text are topically related. NLI tells you whether one piece of text entails, contradicts, or is neutral toward another.
 
 ---
 
 ## Background
 
-Developed as a portfolio project demonstrating full-stack ML engineering in clinical AI safety. Informed by 8+ years of clinical experience in cardiac telemetry monitoring, with real-world awareness of how dangerous unverified clinical information is at the point of care — and what the consequences look like when it goes wrong.
+Developed as a portfolio project demonstrating full-stack ML engineering in clinical AI safety. Informed by 8+ years of clinical experience in cardiac telemetry monitoring, with real-world awareness of how dangerous unverified clinical information is at the point of care.
 
 ---
 
