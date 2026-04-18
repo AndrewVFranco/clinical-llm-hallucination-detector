@@ -26,7 +26,6 @@ async def query(request: QueryRequest):
         result = agent.invoke({
             "query": request.query,
             "search_query": None,
-            "cache_hit": False,
             "abstracts": [],
             "llm_response": None,
             "claims": None,
