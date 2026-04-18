@@ -37,7 +37,7 @@ def add_abstracts(abstracts: list[dict]):
     if data_list:
         get_collection().upsert(vectors=data_list)
 
-def query_abstracts(query: str, n_results: int = 5) -> list[dict]:
+def query_abstracts(query: str, n_results: int = 3) -> list[dict]:
     embedding = _embed_text(query)
     results = get_collection().query(
         vector=embedding,

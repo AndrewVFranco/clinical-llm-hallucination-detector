@@ -1,7 +1,6 @@
 import numpy as np
 import torch
 from src.agent.state import AgentState
-from src.retrieval.cache import get_cache, set_cache
 from src.retrieval.vector_store import add_abstracts, query_abstracts
 from src.retrieval.pubmed import search_pubmed
 from src.monitoring.mlflow_logger import log_query_run
@@ -19,19 +18,6 @@ def extract_clean_text(response) -> str:
         return next((block["text"] for block in response.content if block.get("type") == "text"), "")
     return str(response.content)
 
-def check_cache(state: AgentState):
-    cached_result = get_cache(state["query"])
-    if cached_result:
-        return {"cache_hit": True, "abstracts": cached_result}
-    else:
-        return {"cache_hit": False}
-
-def route_after_cache(state: AgentState) -> str:
-    if state["cache_hit"]:
-        return "llm_generation"
-    return "pubmed_retrieval"
-
-
 def preprocess_query(state: AgentState):
     prompt = f"""You are an expert medical librarian. Convert the clinical question into a professional PubMed search string.
 
@@ -48,17 +34,14 @@ def preprocess_query(state: AgentState):
         Search string:"""
 
     response = _search_llm.invoke(prompt)
-    print(response.content)
     search_query = response.content.strip().replace('"', '')  # Clean quotes for API
     return {"search_query": search_query}
 
 def pubmed_retrieval(state: AgentState):
-    if not state["cache_hit"]:
-        results = search_pubmed(state["search_query"])
-        add_abstracts(results)
-        abstracts = query_abstracts(state["query"])
-        set_cache(state["query"], abstracts)
-        return {"abstracts": abstracts}
+    results = search_pubmed(state["search_query"])
+    add_abstracts(results)
+    abstracts = query_abstracts(state["query"])
+    return {"abstracts": abstracts}
 
 def llm_generation(state: AgentState):
     context = "\n\n".join([f"Title: {a['title']}\nAbstract: {a['abstract']}"
