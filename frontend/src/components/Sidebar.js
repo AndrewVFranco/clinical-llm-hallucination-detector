@@ -1,7 +1,7 @@
 import React from 'react';
 
 function Sidebar({ apiKey, onApiKeyChange, result }) {
-  const score = result ? Math.round(result.confidence_score * 100) : null;
+  const score = result?.confidence_score ? Math.round(result.confidence_score * 100) : 0;
 
   const getScoreColor = (pct) => {
     if (pct >= 70) return '#16a34a';
@@ -15,9 +15,9 @@ function Sidebar({ apiKey, onApiKeyChange, result }) {
     return 'Low reliability — review carefully';
   };
 
-  const supported = result ? result.scored_claims.filter(c => c.label === 'Supported').length : 0;
-  const contradicted = result ? result.scored_claims.filter(c => c.label === 'Contradicted').length : 0;
-  const unverifiable = result ? result.scored_claims.filter(c => c.label === 'Unverifiable').length : 0;
+  const supported = (result?.scored_claims || []).filter(c => c.label === 'Supported').length;
+  const contradicted = (result?.scored_claims || []).filter(c => c.label === 'Contradicted').length;
+  const unverifiable = (result?.scored_claims || []).filter(c => c.label === 'Unverifiable').length;
 
   return (
     <aside className="sidebar">
@@ -79,7 +79,7 @@ function Sidebar({ apiKey, onApiKeyChange, result }) {
 
           <div className="sidebar-section">
             <div className="sidebar-label">Sources</div>
-            {result.abstracts.slice(0, 5).map((a, i) => (
+            {(result?.abstracts || []).slice(0, 5).map((a, i) => (
               <div key={i} style={{ marginBottom: 10 }}>
                 <div style={{ fontSize: 12, color: 'var(--text)', lineHeight: 1.4, marginBottom: 2 }}>
                   {a.title}

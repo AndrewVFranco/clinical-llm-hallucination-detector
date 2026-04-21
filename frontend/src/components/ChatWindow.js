@@ -7,24 +7,33 @@ const FHIR_RESOURCE_TYPES = ['Condition', 'MedicationRequest', 'DiagnosticReport
 
 const SAMPLE_PLACEHOLDERS = [
   'e.g. What are the evidence-based treatments for heart failure?',
-  'e.g. Are there any contraindications for prescribing Tylenol?',
+  'e.g. Are there any contraindications for prescribing Metoprolol?',
   'e.g. Summarize the latest clinical guidelines for managing Type 2 Diabetes.',
-  'e.g. What is the NNT for statins in primary prevention?'
+  'e.g. What is the primary reason to prescribe statins?'
 ];
 
-function ChatWindow({ messages, query, onQueryChange, onSubmit, loading }) {
+const NODE_MESSAGES = {
+  fhir_input: "Connecting to HAPI FHIR server...",
+  preprocess_query: "Analyzing query intent...",
+  pubmed_retrieval: "Querying PubMed abstracts...",
+  detect_medications: "Scanning for medication entities...",
+  fda_enrichment: "Retrieving openFDA medication data...",
+  llm_generation: "Drafting initial clinical response...",
+  parse_claims: "Extracting testable claims...",
+  nli_scoring: "Running NLI verification model...",
+  confidence_scoring: "Calculating overall reliability...",
+  assembly: "Finalizing evidence-based response..."
+};
+
+function ChatWindow({ messages, query, onQueryChange, onSubmit, loading, loadingPhase }) {
   const bottomRef = useRef(null);
   const textareaRef = useRef(null);
   const [showFhir, setShowFhir] = useState(false);
   const [fhirType, setFhirType] = useState('Condition');
   const [fhirId, setFhirId] = useState('');
-
-  // Track which placeholder is currently active
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
 
-  // Swap the placeholder every 5 seconds
   useEffect(() => {
-    // Stop the carousel if a message has already been sent
     if (messages.length > 0) return;
 
     const timer = setInterval(() => {
@@ -71,7 +80,6 @@ function ChatWindow({ messages, query, onQueryChange, onSubmit, loading }) {
 
   const canSubmit = query.trim() || (showFhir && fhirId.trim());
 
-  // Determine what the current placeholder should be
   const currentPlaceholder = showFhir
     ? 'Optional: add a specific question about this resource…'
     : messages.length > 0
@@ -137,10 +145,21 @@ function ChatWindow({ messages, query, onQueryChange, onSubmit, loading }) {
 
         {loading && (
           <div className="message-assistant">
-            <div className="typing-indicator">
-              <div className="typing-dot" />
-              <div className="typing-dot" />
-              <div className="typing-dot" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div className="typing-indicator">
+                <div className="typing-dot" />
+                <div className="typing-dot" />
+                <div className="typing-dot" />
+              </div>
+              <div style={{
+                fontFamily: 'DM Mono, monospace',
+                fontSize: 11,
+                color: 'var(--text-3)',
+                paddingLeft: 4,
+                animation: 'fadeIn 0.5s ease-in'
+              }}>
+                {NODE_MESSAGES[loadingPhase] || "Initializing analysis server..."}
+              </div>
             </div>
           </div>
         )}
@@ -159,8 +178,6 @@ function ChatWindow({ messages, query, onQueryChange, onSubmit, loading }) {
                 · HAPI R4 Server
               </span>
             </div>
-
-            {/* Added flexWrap: 'wrap' here so the inputs stack cleanly on small mobile screens */}
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <select
                 value={fhirType}
@@ -175,8 +192,8 @@ function ChatWindow({ messages, query, onQueryChange, onSubmit, loading }) {
                   padding: '6px 10px',
                   outline: 'none',
                   cursor: 'pointer',
-                  flex: '1 1 auto', /* Allows the select to shrink/grow gracefully */
-                  minWidth: '140px', /* Ensures it doesn't get too small before wrapping */
+                  flex: '1 1 auto',
+                  minWidth: '140px',
                 }}
               >
                 {FHIR_RESOURCE_TYPES.map(t => (
@@ -189,7 +206,7 @@ function ChatWindow({ messages, query, onQueryChange, onSubmit, loading }) {
                 value={fhirId}
                 onChange={(e) => setFhirId(e.target.value)}
                 style={{
-                  flex: '2 1 auto', /* Allows input to take up remaining space */
+                  flex: '2 1 auto',
                   minWidth: '150px',
                   background: 'var(--bg)',
                   border: '1px solid var(--border)',
