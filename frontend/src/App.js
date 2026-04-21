@@ -11,6 +11,7 @@ function App() {
   const [apiKey, setApiKey] = useState('');
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingPhase, setLoadingPhase] = useState(null);
   const [result, setResult] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(() => {
@@ -35,16 +36,17 @@ function App() {
   const handleSubmit = async (fhirData = {}) => {
     if ((!query.trim() && !fhirData.has_fhir) || loading) return;
 
-    // Close the sidebar automatically on mobile when a query is sent
     closeSidebar();
 
     const userMessage = {
         role: 'user',
         text: query || `FHIR ${fhirData.fhir_resource_type}/${fhirData.fhir_resource_id}`
       };
+
     setMessages(prev => [...prev, userMessage]);
     setQuery('');
     setLoading(true);
+    setLoadingPhase(null);
     setResult(null);
 
     try {
@@ -55,12 +57,42 @@ function App() {
       });
 
       if (!response.ok) throw new Error('Query failed');
-      const data = await response.json();
-      console.log('full response:', data);
-      console.log('final_response:', data.final_response);
-      const final = data.final_response;
-      setResult(final);
-      setMessages(prev => [...prev, { role: 'assistant', data: final }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder("utf-8");
+
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split('\n\n');
+
+        buffer = parts.pop();
+
+        for (const part of parts) {
+          const line = part.trim();
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.substring(6));
+
+              if (data.status) {
+                setLoadingPhase(data.status);
+              }
+
+              if (data.final_response) {
+                setResult(data.final_response);
+                setMessages(prev => [...prev, { role: 'assistant', data: data.final_response }]);
+              }
+            } catch (parseError) {
+               console.error("JSON Parse Error on complete chunk:", line, parseError);
+            }
+          }
+        }
+      }
     } catch (err) {
         let errorText = 'Failed to connect to the analysis server. Ensure the backend is running.';
 
@@ -78,6 +110,7 @@ function App() {
         }]);
     } finally {
       setLoading(false);
+      setLoadingPhase(null);
     }
   };
 
@@ -99,8 +132,8 @@ function App() {
         </div>
 
         <div>
-          <button onClick={toggleTheme} style={{ background: 'none', border: 'none', outline: 'none', color: 'inherit', cursor: 'pointer' }}>
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+          <button onClick={toggleTheme} style={{ background: 'none', border: 'none', outline: 'none', color: 'inherit' }}>
+            {darkMode ? <Sun /> : <Moon />}
           </button>
         </div>
       </header>
@@ -120,6 +153,7 @@ function App() {
           onQueryChange={setQuery}
           onSubmit={handleSubmit}
           loading={loading}
+          loadingPhase={loadingPhase}
         />
       </div>
     </div>
